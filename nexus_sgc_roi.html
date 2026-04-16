@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — ROI para SGCs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F8FAFC; color: #1a1a1a; min-height: 100vh; }
+  .page { max-width: 820px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .logo { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #2563EB; text-transform: uppercase; margin-bottom: 2rem; }
+  .header-title { font-size: 28px; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+  .header-sub { font-size: 15px; color: #64748b; margin-bottom: 6px; line-height: 1.5; }
+  .price-badge { display: inline-flex; align-items: center; background: #EFF6FF; color: #1D4ED8; font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 20px; margin-top: 10px; margin-bottom: 2rem; border: 1px solid #BFDBFE; }
+  .section-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }
+  .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+  .sl { background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem 1.125rem; }
+  .sl-label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+  .sl-sub { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+  .sl-val { font-size: 22px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+  input[type=range] { width: 100%; accent-color: #2563EB; cursor: pointer; }
+  .money-flow { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
+  .mf-group { padding: 1rem 1.25rem 0.5rem; }
+  .mf-group-title { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .mf-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid #F1F5F9; }
+  .mf-row:last-child { border-bottom: none; }
+  .mf-label { font-size: 13px; color: #475569; }
+  .mf-val { font-size: 14px; font-weight: 600; color: #0f172a; }
+  .mf-val.blue { color: #2563EB; } .mf-val.green { color: #059669; } .mf-val.red { color: #DC2626; } .mf-val.muted { color: #94a3b8; font-weight: 400; }
+  .mf-sep { height: 1px; background: #E2E8F0; }
+  .mf-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 1.25rem; background: #F8FAFC; }
+  .mf-total-label { font-size: 14px; font-weight: 600; color: #0f172a; }
+  .mf-total-val { font-size: 22px; font-weight: 700; }
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 2rem; }
+  .kpi { background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem 1.125rem; }
+  .kpi-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .kpi-val { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .kpi-sub { font-size: 12px; color: #94a3b8; }
+  .acum { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 2rem; }
+  .ac { background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem 1.125rem; }
+  .ac-period { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .ac-val { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .ac-sub { font-size: 12px; color: #94a3b8; }
+  .chart-area { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .chart-wrap { position: relative; width: 100%; height: 280px; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+  .leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .note { font-size: 13px; line-height: 1.6; padding: 1rem 1.125rem; border-radius: 0 10px 10px 0; margin-bottom: 2rem; }
+  .note.ok { border-left: 3px solid #059669; background: #F0FDF4; color: #065F46; }
+  .note.warn { border-left: 3px solid #D97706; background: #FFFBEB; color: #92400E; }
+  .col-green { color: #059669; } .col-red { color: #DC2626; } .col-blue { color: #2563EB; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="logo">Nexus · Calculadora de ROI</div>
+  <h1 class="header-title">¿Cuándo le conviene Nexus a tu SGC?</h1>
+  <p class="header-sub">Cada licencia se cobra al cierre y nuevamente en cada renovación anual. El churn se aplica solo al vencimiento de cada cohorte.</p>
+  <div class="price-badge">Suscripción piloto Nexus: USD 500 / mes · fijo</div>
+
+  <div class="section-label">Parámetros</div>
+  <div class="sliders">
+    <div class="sl">
+      <div class="sl-label">Prospectos gestionados / mes</div>
+      <div class="sl-val" id="vol-out">500</div>
+      <input type="range" min="100" max="10000" step="100" value="500" id="vol">
+    </div>
+    <div class="sl">
+      <div class="sl-label">Tasa de conversión a licencia</div>
+      <div class="sl-val" id="conv-out">10%</div>
+      <input type="range" min="1" max="100" step="1" value="10" id="conv">
+    </div>
+    <div class="sl">
+      <div class="sl-label">Ticket por licencia / año</div>
+      <div class="sl-val" id="ticket-out">USD 120</div>
+      <input type="range" min="50" max="500" step="10" value="120" id="ticket">
+    </div>
+    <div class="sl">
+      <div class="sl-label">% que la SGC retiene</div>
+      <div class="sl-sub">El resto se distribuye a socios</div>
+      <div class="sl-val" id="dist-out">30%</div>
+      <input type="range" min="0" max="100" step="1" value="30" id="dist">
+    </div>
+    <div class="sl">
+      <div class="sl-label">Costo IA + WhatsApp / prospecto</div>
+      <div class="sl-sub">Corre por cuenta de la SGC (BYOK)</div>
+      <div class="sl-val" id="var-out">USD 0.40</div>
+      <input type="range" min="0.05" max="2" step="0.05" value="0.40" id="var">
+    </div>
+    <div class="sl">
+      <div class="sl-label">Churn al vencimiento anual</div>
+      <div class="sl-sub">Licencias que no renuevan al cumplir el año</div>
+      <div class="sl-val" id="churn-out">20%</div>
+      <input type="range" min="0" max="100" step="1" value="20" id="churn">
+    </div>
+  </div>
+
+  <div class="section-label">Flujo de caja — mes 1</div>
+  <div class="money-flow">
+    <div class="mf-group">
+      <div class="mf-group-title">Ingresos del mes</div>
+      <div class="mf-row"><span class="mf-label">Licencias nuevas cerradas</span><span class="mf-val blue" id="mf-lic">—</span></div>
+      <div class="mf-row"><span class="mf-label">Cobrado al cierre (licencias × ticket)</span><span class="mf-val" id="mf-bruto">—</span></div>
+      <div class="mf-row"><span class="mf-label" id="mf-socios-label">Transferido a socios</span><span class="mf-val muted" id="mf-socios">—</span></div>
+      <div class="mf-row"><span class="mf-label">La SGC retiene</span><span class="mf-val green" id="mf-sgc">—</span></div>
+    </div>
+    <div class="mf-sep"></div>
+    <div class="mf-group">
+      <div class="mf-group-title">Costos del mes</div>
+      <div class="mf-row"><span class="mf-label">Suscripción piloto Nexus</span><span class="mf-val red">-USD 500</span></div>
+      <div class="mf-row"><span class="mf-label" id="mf-ia-label">Costo IA + WhatsApp</span><span class="mf-val red" id="mf-ia">—</span></div>
+    </div>
+    <div class="mf-sep"></div>
+    <div class="mf-total">
+      <span class="mf-total-label">Resultado neto de la SGC — mes 1</span>
+      <span class="mf-total-val" id="mf-resultado">—</span>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Primer mes en verde</div>
+      <div class="kpi-val col-blue" id="k-be">—</div>
+      <div class="kpi-sub" id="k-be-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Licencias activas — mes 12</div>
+      <div class="kpi-val col-blue" id="k-c12">—</div>
+      <div class="kpi-sub">antes del primer churn</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Resultado — mes 36</div>
+      <div class="kpi-val" id="k-m36">—</div>
+      <div class="kpi-sub">por mes, año 3</div>
+    </div>
+  </div>
+
+  <div class="section-label">Cobros vs. costos — 36 meses</div>
+  <div class="chart-area">
+    <div class="chart-wrap">
+      <canvas id="chart" role="img" aria-label="Cobros mensuales de la SGC versus costos durante 36 meses">Gráfico de 36 meses.</canvas>
+    </div>
+    <div class="legend">
+      <div class="leg"><div class="leg-sq" style="background:#2563EB;opacity:0.7"></div>Cobrado ese mes (nuevas + renovaciones de esa cohorte)</div>
+      <div class="leg"><div class="leg-sq" style="background:#DC2626;opacity:0.6"></div>Costo mensual total</div>
+      <div class="leg"><div class="leg-sq" style="background:#059669"></div>Resultado neto mensual</div>
+    </div>
+  </div>
+
+  <div class="section-label">Ganancia neta acumulada por año</div>
+  <div class="acum">
+    <div class="ac">
+      <div class="ac-period">Año 1 — meses 1 a 12</div>
+      <div class="ac-val" id="ac-1">—</div>
+      <div class="ac-sub">suma de resultados mensuales</div>
+    </div>
+    <div class="ac">
+      <div class="ac-period">Año 2 — meses 13 a 24</div>
+      <div class="ac-val" id="ac-2">—</div>
+      <div class="ac-sub">suma de resultados mensuales</div>
+    </div>
+    <div class="ac">
+      <div class="ac-period">Año 3 — meses 25 a 36</div>
+      <div class="ac-val" id="ac-3">—</div>
+      <div class="ac-sub">suma de resultados mensuales</div>
+    </div>
+  </div>
+
+  <div class="note" id="note-main"></div>
+</div>
+
+<script>
+const NEXUS = 500;
+let mainChart;
+
+function fmtUSD(n) {
+  const a = Math.abs(Math.round(n));
+  return (n < 0 ? '-' : '') + 'USD ' + a.toLocaleString('es-AR');
+}
+
+function simulate(newPerMonth, ticketSgc, monthlyCost, churnRate, months) {
+  const rows = [];
+  for (let m = 1; m <= months; m++) {
+    let cobrado = 0;
+    let cartera = 0;
+    // Each cohort k (closed in month k, where k <= m)
+    for (let k = 1; k <= m; k++) {
+      const ageMonths    = m - k;
+      const yearsElapsed = Math.floor(ageMonths / 12);
+      const surviving    = newPerMonth * Math.pow(1 - churnRate, yearsElapsed);
+      cartera += surviving;
+      // Cohort k generates income in month k, month k+12, month k+24, etc.
+      // i.e. when ageMonths is a multiple of 12
+      if (ageMonths % 12 === 0) {
+        cobrado += surviving * ticketSgc;
+      }
+    }
+    rows.push({
+      m,
+      cobrado: Math.round(cobrado),
+      cartera: Math.round(cartera),
+      costo: monthlyCost,
+      resultado: Math.round(cobrado - monthlyCost)
+    });
+  }
+  return rows;
+}
+
+function update() {
+  const vol    = parseInt(document.getElementById('vol').value);
+  const conv   = parseInt(document.getElementById('conv').value);
+  const ticket = parseInt(document.getElementById('ticket').value);
+  const dist   = parseInt(document.getElementById('dist').value);
+  const varCpp = parseFloat(document.getElementById('var').value);
+  const churn  = parseInt(document.getElementById('churn').value);
+
+  document.getElementById('vol-out').textContent    = vol.toLocaleString('es-AR');
+  document.getElementById('conv-out').textContent   = conv + '%';
+  document.getElementById('ticket-out').textContent = 'USD ' + ticket;
+  document.getElementById('dist-out').textContent   = dist + '%';
+  document.getElementById('var-out').textContent    = 'USD ' + varCpp.toFixed(2);
+  document.getElementById('churn-out').textContent  = churn + '%';
+
+  const newPerMonth = Math.round(vol * conv / 100);
+  const ticketSgc   = ticket * (dist / 100);
+  const iaCost      = Math.round(vol * varCpp);
+  const monthlyCost = NEXUS + iaCost;
+  const churnRate   = churn / 100;
+
+  const brutoCobrado = Math.round(newPerMonth * ticket);
+  const sociosParte  = Math.round(brutoCobrado * (1 - dist / 100));
+  const sgcRetiene   = Math.round(newPerMonth * ticketSgc);
+  const resultadoM1  = sgcRetiene - monthlyCost;
+
+  document.getElementById('mf-lic').textContent         = newPerMonth.toLocaleString('es-AR') + ' licencias';
+  document.getElementById('mf-bruto').textContent       = fmtUSD(brutoCobrado);
+  document.getElementById('mf-socios-label').textContent = `Transferido a socios (${100 - dist}%)`;
+  document.getElementById('mf-socios').textContent      = '-' + fmtUSD(sociosParte);
+  document.getElementById('mf-sgc').textContent         = fmtUSD(sgcRetiene);
+  document.getElementById('mf-ia-label').textContent    = `Costo IA + WhatsApp (${vol.toLocaleString('es-AR')} prospectos × USD ${varCpp.toFixed(2)})`;
+  document.getElementById('mf-ia').textContent          = '-' + fmtUSD(iaCost);
+
+  const resEl = document.getElementById('mf-resultado');
+  resEl.textContent = fmtUSD(resultadoM1);
+  resEl.className   = 'mf-total-val ' + (resultadoM1 >= 0 ? 'col-green' : 'col-red');
+
+  const data   = simulate(newPerMonth, ticketSgc, monthlyCost, churnRate, 36);
+  const beIdx  = data.findIndex(d => d.resultado >= 0);
+  const beData = beIdx !== -1 ? data[beIdx] : null;
+
+  const beEl = document.getElementById('k-be');
+  beEl.textContent = beIdx === -1 ? 'No alcanza' : 'Mes ' + (beIdx + 1);
+  beEl.className   = 'kpi-val ' + (beIdx !== -1 ? 'col-green' : 'col-red');
+  document.getElementById('k-be-sub').textContent = beIdx === -1 ? 'en 36 meses'
+    : beIdx < 12 ? 'año 1 · solo nuevas licencias'
+    : beIdx < 24 ? 'año 2 · renovaciones empujan el resultado'
+    : 'año 3';
+
+  document.getElementById('k-c12').textContent = data[11].cartera.toLocaleString('es-AR');
+
+  const m36el = document.getElementById('k-m36');
+  m36el.textContent = fmtUSD(data[35].resultado);
+  m36el.className   = 'kpi-val ' + (data[35].resultado >= 0 ? 'col-green' : 'col-red');
+
+  // Cumulative net per year
+  const acum1 = data.slice(0, 12).reduce((s, d) => s + d.resultado, 0);
+  const acum2 = data.slice(12, 24).reduce((s, d) => s + d.resultado, 0);
+  const acum3 = data.slice(24, 36).reduce((s, d) => s + d.resultado, 0);
+
+  const ac1el = document.getElementById('ac-1');
+  const ac2el = document.getElementById('ac-2');
+  const ac3el = document.getElementById('ac-3');
+  ac1el.textContent = fmtUSD(acum1); ac1el.className = 'ac-val ' + (acum1 >= 0 ? 'col-green' : 'col-red');
+  ac2el.textContent = fmtUSD(acum2); ac2el.className = 'ac-val ' + (acum2 >= 0 ? 'col-green' : 'col-red');
+  ac3el.textContent = fmtUSD(acum3); ac3el.className = 'ac-val ' + (acum3 >= 0 ? 'col-green' : 'col-red');
+
+  const labels  = data.map(d => 'M' + d.m);
+  const cobrado = data.map(d => d.cobrado);
+  const costos  = data.map(d => d.costo);
+  const results = data.map(d => d.resultado);
+
+  if (mainChart) mainChart.destroy();
+  mainChart = new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Cobrado ese mes', data: cobrado, backgroundColor: 'rgba(37,99,235,0.55)', borderRadius: 3, order: 2 },
+        { label: 'Costo mensual',   data: costos,  backgroundColor: 'rgba(220,38,38,0.4)',  borderRadius: 3, order: 3 },
+        { label: 'Resultado',       data: results, type: 'line', borderColor: '#059669', backgroundColor: 'transparent', pointRadius: 2, tension: 0, borderWidth: 2, order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxTicksLimit: 12 }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: v => { const a = Math.abs(v); const s = v < 0 ? '-' : ''; return a >= 1000 ? s + 'USD ' + (a/1000).toFixed(0) + 'k' : s + 'USD ' + a; } }, grid: { color: '#F1F5F9' } }
+      }
+    }
+  });
+
+  const note = document.getElementById('note-main');
+  if (beIdx === -1) {
+    note.className = 'note warn';
+    note.textContent = 'Con esta configuración los cobros no superan el costo mensual en 36 meses. Probá subir el volumen de prospectos o la tasa de conversión.';
+  } else if (beIdx < 12) {
+    note.className = 'note ok';
+    note.textContent = `Rentable desde el mes ${beIdx + 1} — solo con nuevas licencias, sin renovaciones todavía. A partir del mes 13, cada mes suma la renovación de la cohorte de hace un año, generando una rampa creciente de ingresos. En el mes 36, la SGC cobra ${fmtUSD(data[35].cobrado)} ese mes y obtiene ${fmtUSD(data[35].resultado)} de resultado neto.`;
+  } else {
+    note.className = 'note ok';
+    note.textContent = `Breakeven en el mes ${beIdx + 1} — las renovaciones acumuladas mes a mes a partir del mes 13 son las que empujan el resultado a positivo. En el mes 36, la SGC cobra ${fmtUSD(data[35].cobrado)} ese mes y obtiene ${fmtUSD(data[35].resultado)} de resultado neto.`;
+  }
+}
+
+['vol','conv','ticket','dist','var','churn'].forEach(id =>
+  document.getElementById(id).addEventListener('input', update)
+);
+update();
+</script>
+</body>
+</html>
