@@ -78,18 +78,6 @@
       <input type="range" min="50" max="500" step="10" value="120" id="ticket">
     </div>
     <div class="sl">
-      <div class="sl-label">% que la SGC retiene</div>
-      <div class="sl-sub">El resto se distribuye a socios</div>
-      <div class="sl-val" id="dist-out">30%</div>
-      <input type="range" min="0" max="100" step="1" value="30" id="dist">
-    </div>
-    <div class="sl">
-      <div class="sl-label">Costo IA + WhatsApp / prospecto</div>
-      <div class="sl-sub">Corre por cuenta de la SGC (BYOK)</div>
-      <div class="sl-val" id="var-out">USD 0.40</div>
-      <input type="range" min="0.05" max="2" step="0.05" value="0.40" id="var">
-    </div>
-    <div class="sl">
       <div class="sl-label">Churn al vencimiento anual</div>
       <div class="sl-sub">Licencias que no renuevan al cumplir el año</div>
       <div class="sl-val" id="churn-out">20%</div>
@@ -102,15 +90,12 @@
     <div class="mf-group">
       <div class="mf-group-title">Ingresos del mes</div>
       <div class="mf-row"><span class="mf-label">Licencias nuevas cerradas</span><span class="mf-val blue" id="mf-lic">—</span></div>
-      <div class="mf-row"><span class="mf-label">Cobrado al cierre (licencias × ticket)</span><span class="mf-val" id="mf-bruto">—</span></div>
-      <div class="mf-row"><span class="mf-label" id="mf-socios-label">Transferido a socios</span><span class="mf-val muted" id="mf-socios">—</span></div>
-      <div class="mf-row"><span class="mf-label">La SGC retiene</span><span class="mf-val green" id="mf-sgc">—</span></div>
+      <div class="mf-row"><span class="mf-label">Cobrado al cierre</span><span class="mf-val green" id="mf-bruto">—</span></div>
     </div>
     <div class="mf-sep"></div>
     <div class="mf-group">
       <div class="mf-group-title">Costos del mes</div>
       <div class="mf-row"><span class="mf-label">Suscripción piloto Nexus</span><span class="mf-val red">-USD 500</span></div>
-      <div class="mf-row"><span class="mf-label" id="mf-ia-label">Costo IA + WhatsApp</span><span class="mf-val red" id="mf-ia">—</span></div>
     </div>
     <div class="mf-sep"></div>
     <div class="mf-total">
@@ -212,35 +197,23 @@ function update() {
   const vol    = parseInt(document.getElementById('vol').value);
   const conv   = parseInt(document.getElementById('conv').value);
   const ticket = parseInt(document.getElementById('ticket').value);
-  const dist   = parseInt(document.getElementById('dist').value);
-  const varCpp = parseFloat(document.getElementById('var').value);
   const churn  = parseInt(document.getElementById('churn').value);
 
   document.getElementById('vol-out').textContent    = vol.toLocaleString('es-AR');
   document.getElementById('conv-out').textContent   = conv + '%';
   document.getElementById('ticket-out').textContent = 'USD ' + ticket;
-  document.getElementById('dist-out').textContent   = dist + '%';
-  document.getElementById('var-out').textContent    = 'USD ' + varCpp.toFixed(2);
   document.getElementById('churn-out').textContent  = churn + '%';
 
   const newPerMonth = Math.round(vol * conv / 100);
-  const ticketSgc   = ticket * (dist / 100);
-  const iaCost      = Math.round(vol * varCpp);
-  const monthlyCost = NEXUS + iaCost;
+  const ticketSgc   = ticket;
+  const monthlyCost = NEXUS;
   const churnRate   = churn / 100;
 
-  const brutoCobrado = Math.round(newPerMonth * ticket);
-  const sociosParte  = Math.round(brutoCobrado * (1 - dist / 100));
   const sgcRetiene   = Math.round(newPerMonth * ticketSgc);
   const resultadoM1  = sgcRetiene - monthlyCost;
 
-  document.getElementById('mf-lic').textContent         = newPerMonth.toLocaleString('es-AR') + ' licencias';
-  document.getElementById('mf-bruto').textContent       = fmtUSD(brutoCobrado);
-  document.getElementById('mf-socios-label').textContent = `Transferido a socios (${100 - dist}%)`;
-  document.getElementById('mf-socios').textContent      = '-' + fmtUSD(sociosParte);
-  document.getElementById('mf-sgc').textContent         = fmtUSD(sgcRetiene);
-  document.getElementById('mf-ia-label').textContent    = `Costo IA + WhatsApp (${vol.toLocaleString('es-AR')} prospectos × USD ${varCpp.toFixed(2)})`;
-  document.getElementById('mf-ia').textContent          = '-' + fmtUSD(iaCost);
+  document.getElementById('mf-lic').textContent   = newPerMonth.toLocaleString('es-AR') + ' licencias';
+  document.getElementById('mf-bruto').textContent = fmtUSD(sgcRetiene);
 
   const resEl = document.getElementById('mf-resultado');
   resEl.textContent = fmtUSD(resultadoM1);
@@ -315,7 +288,7 @@ function update() {
   }
 }
 
-['vol','conv','ticket','dist','var','churn'].forEach(id =>
+['vol','conv','ticket','churn'].forEach(id =>
   document.getElementById(id).addEventListener('input', update)
 );
 update();
